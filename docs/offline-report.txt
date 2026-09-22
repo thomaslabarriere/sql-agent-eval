@@ -1,0 +1,29 @@
+# Offline report - reproducible with no API key and no network: npm run report
+# Agent: scripted:offline (a deterministic stand-in that exercises the verifier across
+# every category; its accuracy is not an agent-quality claim). The real signal is the
+# live gpt-4o-mini run in docs/gpt4o-run.txt, and the gold-SQL mutation kill rate below.
+#
+Scorecard - agent: scripted:offline
+  accuracy                     : 50%   (10/20)
+  errors held at high conf     : 100%   <-- of all wrong answers (conf >= 75%)
+  mean confidence right/wrong  : 0.86 / 0.83
+  gold-SQL mutation kill rate  : 100%   (42/42 killed: 18 by the result comparator, 24 by error classification)
+
+  accuracy by level:
+    level 1   50%   (2/4)
+    level 2   67%   (4/6)
+    level 3   50%   (2/4)
+    level 4   67%   (2/3)
+    level 5    0%   (0/3)
+
+  confidence x correctness:
+                     correct   wrong
+    high confidence       9      10   <-- high+wrong is the danger
+    low confidence        1       0
+
+  outcome by category:
+    correct                10
+    wrong_result           7
+    sql_error              1
+    schema_hallucination   1
+    ambiguous_question     1

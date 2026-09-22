@@ -1,0 +1,50 @@
+# Live run - real model, committed as evidence.
+# Model: gpt-4o-mini. Date: 2026-09-22.
+# Reproduce: OPENAI_API_KEY=sk-... MODEL=gpt-4o-mini npm run live
+#
+# Findings:
+# - Schema access is the big win: baseline (no schema) 45%, schema-aware 85%. Without
+#   the schema the model invents column names (10 of 20 come back schema_hallucination).
+# - Agentic retry-on-error removes execution errors (schema_hallucination 1 -> 0) but
+#   does NOT raise accuracy (still 85%): it turns a query that fails to run into one that
+#   runs and is still wrong. Retry fixes execution, not correctness. Measured, not assumed.
+# - Every wrong answer was held at high confidence (err@hi 100%; mean confidence on wrong
+#   answers 0.97, higher than 0.96 on right ones). The model's confidence gives a business
+#   user no warning. This is the failure the harness exists to surface.
+# - Weakest level is temporal (level 4, 33%): running totals and date boundaries.
+# - Gold-SQL mutation kill rate is 100% (18 caught by the result comparator, 24 by error
+#   classification), so the verifier provably catches the injected SQL errors it is meant to.
+# Sample size: this is one run over a 20-question benchmark, so per-level rates (level 4
+# is 1 of 3) are illustrative, not statistically strong. The harness is the deliverable;
+# scale the benchmark for tighter numbers.
+#
+Strategy comparison (same benchmark, same data):
+  strategy  acc       correct   wrong_res sql_err   schema    ambig     err@hi    
+  baseline  45%       9         1         0         10        0         100%      
+  schema    85%       17        2         0         1         0         100%      
+  agentic   85%       17        3         0         0         0         100%      
+
+  (correct includes correctly abstaining on ambiguous questions; err@hi = share of wrong answers held at high confidence)
+
+Scorecard - agent: llm:gpt-4o-mini:schema
+  accuracy                     : 85%   (17/20)
+  errors held at high conf     : 100%   <-- of all wrong answers (conf >= 75%)
+  mean confidence right/wrong  : 0.96 / 0.97
+  gold-SQL mutation kill rate  : 100%   (42/42 mutants killed)
+
+  accuracy by level:
+    level 1  100%   (4/4)
+    level 2   83%   (5/6)
+    level 3  100%   (4/4)
+    level 4   33%   (1/3)
+    level 5  100%   (3/3)
+
+  confidence x correctness:
+                     correct   wrong
+    high confidence      17       3   <-- high+wrong is the danger
+    low confidence        0       0
+
+  outcome by category:
+    correct                17
+    wrong_result           2
+    schema_hallucination   1
