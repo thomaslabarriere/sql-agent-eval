@@ -335,8 +335,8 @@ ferait changer d'avis. Statut : PROPOSÉE (en attente de Thomas) ou ACTÉE.
   `npm run spider -- report` sont en anglais, comme le reste du repo (README et
   docs existants). DECISIONS.md et ETAT.md restent en français : ce sont les
   documents de travail de Thomas.
-- Changerait d'avis si : Thomas veut une version française du rapport pour une
-  candidature précise (à produire depuis les mêmes fichiers de résultats).
+- Changerait d'avis si : Thomas veut une version française du rapport pour un
+  lecteur francophone (à produire depuis les mêmes fichiers de résultats).
 
 ## D22. Correction de D10 : les résultats committés contiennent du texte Spider
 - Date : 2026-09-29. Statut : ACTÉE.

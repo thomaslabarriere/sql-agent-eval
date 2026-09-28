@@ -28,6 +28,35 @@ DuckDB runs it, the number looks plausible, and it is wrong. Only comparing the
 result to ground truth catches it. That is the failure this harness exists to
 measure.
 
+## Real data: a fine-tuned local model on Spider, before and after
+
+The same verifier runs on the public Spider 1.0 benchmark (Yu et al., 2018,
+CC BY-SA 4.0): 2147 test questions over 40 real SQLite databases that no model
+was trained or tuned on. Qwen2.5-Coder-1.5B-Instruct was fine-tuned with LoRA on
+Spider train (MLX, on a laptop), served locally, and evaluated once before and
+once after with the same prompt, executor and comparator.
+
+| Spider test (2147) | base model | fine-tuned (LoRA) | gpt-4o-mini (reference) |
+|---|---|---|---|
+| execution accuracy, this harness | 59.2% [57.2, 61.3] | **66.5%** [64.4, 68.4] | 73.0% [71.1, 74.9] |
+| official Spider evaluator (`--keep_distinct`) | 62.8% | 70.6% | 77.9% |
+| invented table or column | 325 | 214 | 6 |
+| latency p50 / p95 | 539 / 1223 ms | 477 / 1275 ms | 945 / 1502 ms (network) |
+| API cost | $0 (local) | $0 (local) | $0.129 |
+
+95% Wilson intervals in brackets. Question by question: 263 fixes and **108
+regressions** (right before, wrong after), net +7.2 points, exact McNemar
+p = 4.8e-16. The regressions are listed one by one.
+
+Checked rather than assumed: no database shared between train and eval, 69
+textual duplicates removed from training, the test set run once per model after
+the model was chosen on dev, and the served model verified before each run (the
+MLX server silently ignored the adapter; see the report). Limits are stated
+there too, including signs that the base model had seen Spider.
+
+Full report, protocol and exact commands: `docs/FINETUNE-REPORT.md`. Every
+decision and what was rejected: `DECISIONS.md`.
+
 ## The verifier is a real component
 
 "Same result" is subtle, so the comparator (`src/verify.ts`) is deliberate:
@@ -95,7 +124,7 @@ Offline, no API key, no network:
 
 ```bash
 npm install
-npm test          # 30 tests
+npm test          # 72 tests (2 need the Spider data and are skipped without it)
 npm run report    # deterministic scorecard + mutation kill rate
 ```
 
@@ -111,8 +140,9 @@ limits, and `docs/BUG-PATTERNS.md` for the traps and how they are caught.
 
 ## Honest limitations
 
-The dataset is synthetic (deterministic, generated SQL-side), not production
-data. The offline scorecard uses a scripted stand-in agent to exercise the
+The five-level benchmark above is synthetic (deterministic, generated SQL-side),
+not production data; the Spider section is the real-data evaluation, with its own
+limits in `docs/FINETUNE-REPORT.md`. The offline scorecard uses a scripted stand-in agent to exercise the
 verifier across every category, so its accuracy is not an agent-quality claim;
 the live run and the mutation kill rate are the real signals. The verifier
 treats column order as semantic and row order as noise unless the question asks
@@ -120,4 +150,5 @@ for a ranking, which is a deliberate, documented choice.
 
 ## License
 
-MIT
+Code: MIT. Result files that reproduce Spider questions and SQL
+(`results/spider/`) are CC BY-SA 4.0, see `results/spider/DATA-LICENSE.md`.
