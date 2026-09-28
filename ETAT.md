@@ -35,18 +35,38 @@ harnais, rapport avant/après honnête.
 
 ## En cours
 
-- Entraînement config A lancé le 2026-09-28 (`finetune/train.sh lora-a.yaml
-  adapters/lora-a`), journal `finetune/logs/lora-a.log`. Environ 0,32 it/s,
-  environ 2 h pour 2148 itérations. Pic mémoire vu : 31 Go.
-- Ensuite : servir l'adaptateur, l'évaluer sur le dev de sélection, comparer à
-  la baseline (`report --before base --after lora-a`).
-- gpt-4o-mini sur test : run complet lancé le 2026-09-28 (clé extraite du
-  fichier indiqué par Thomas vers `.env`, gitignoré, jamais affichée). Reprenable :
-  `npm run spider -- run --split test --label gpt-4o-mini --model gpt-4o-mini --base-url https://api.openai.com/v1`
-- Réserve : ce run tourne en même temps que l'entraînement A (CPU partagé pour
-  SQLite). Le temps d'entraînement de A est donc un majorant léger.
+- INCIDENT résolu (D19) : `mlx_lm.server` 0.31.3 ignorait `--adapter-path`. Le
+  premier "lora-a" dev était en fait la base (renommé `base-rerun.dev.jsonl`).
+  On sert maintenant les modèles FUSIONNÉS (`finetune/fused/lora-a`,
+  `finetune/fused/lora-a-1000`, 2,9 Go chacun, gitignorés).
+- Garde-fou avant chaque run : `npm run spider -- check-served --expect finetuned|base`.
+  Mesuré : base 2/20 (10 %, pile au seuil), fused/lora-a 11/20 (55 %).
+- Évaluation de `fused/lora-a` sur dev de sélection en cours. Ensuite
+  `fused/lora-a-1000`, choix sur dev (règle D18), puis UN passage test pour
+  base et final.
+
+## Commandes (modèle fusionné)
+
+```bash
+finetune/.venv/bin/mlx_lm.fuse --model <snapshot Qwen> --adapter-path finetune/adapters/lora-a --save-path finetune/fused/lora-a
+finetune/.venv/bin/mlx_lm.server --model finetune/fused/lora-a --port 8080
+npm run spider -- check-served --expect finetuned
+npm run spider -- run --split dev --exclude-valid --label lora-a
+```
 
 ## Résultats déjà mesurés
+
+- Non-déterminisme du service (base servie deux fois, même prompt, glouton) :
+  56/834 réponses différentes (6,7 %) ; 504 puis 501 justes ; 13 items
+  changent de verdict. C'est le bruit de fond de toute comparaison.
+
+- gpt-4o-mini sur test (2147) : 73,0 % (1568), IC [71,1 ; 74,9] ; officiel
+  77,6 % (par défaut), 77,9 % (--keep_distinct). Coût mesuré 0,129 $.
+- Indice de contamination (R3), à mettre dans le rapport : 28/834 réponses du
+  modèle de base sur dev reprennent l'espacement typique du gold Spider
+  (`a ,  b`, `x  =  y`), dont 5 copies exactes du gold ; 0/2147 pour
+  gpt-4o-mini. Justesse sur ces 28 : 57,1 % contre 60,5 % sur les autres. Indice
+  d'exposition à Spider, pas une preuve ; n'explique pas le score.
 
 - Baseline dev de sélection (834) : 60,4 % (504/834), IC 95 % [57,1 ; 63,7].
   Officiel : 63,7 % par défaut, 62,9 % avec --keep_distinct (écarts expliqués

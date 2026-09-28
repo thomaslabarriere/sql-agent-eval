@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { apiCostUsd, comparePaired, summarize } from "../src/spider/report.js";
 import type { ItemResult } from "../src/spider/run.js";
+import { exactHits } from "../src/spider/checkServed.js";
 import type { Category } from "../src/types.js";
 
 function r(id: string, category: Category, extra: Partial<ItemResult> = {}): ItemResult {
@@ -79,5 +80,13 @@ describe("apiCostUsd", () => {
     const s = summarize([r("a", "correct", { promptTokens: 1_000_000, completionTokens: 500_000 })]);
     expect(apiCostUsd(s, 0.15, 0.6)).toBeCloseTo(0.45, 10);
     expect(apiCostUsd(summarize([r("a", "correct", { promptTokens: null })]), 0.15, 0.6)).toBeNull();
+  });
+});
+
+describe("check-served exact hits", () => {
+  it("counts only character-exact reproductions of the target", () => {
+    const targets = ["SELECT sum(x) FROM t WHERE a  =  1", "SELECT count(*) FROM t"];
+    expect(exactHits(["SELECT sum(x) FROM t WHERE a  =  1", "SELECT COUNT(*) FROM t"], targets)).toBe(1);
+    expect(exactHits(["```sql\nSELECT count(*) FROM t\n```", "SELECT count(*) FROM t;"], ["SELECT count(*) FROM t", "SELECT count(*) FROM t"])).toBe(2);
   });
 });

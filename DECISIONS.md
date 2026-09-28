@@ -280,3 +280,35 @@ ferait changer d'avis. Statut : PROPOSÉE (en attente de Thomas) ou ACTÉE.
   choix se fait sur la justesse d'exécution, pas sur la perte.
 - Écartée : réentraîner avec lr 5e-5 (la courbe ne montre pas de
   sous-apprentissage).
+
+## D19. INCIDENT : adaptateur jamais appliqué par le serveur ; on sert le modèle fusionné
+- Date : 2026-09-28. Statut : ACTÉE.
+- Constat : la première évaluation "lora-a" sur dev donnait 60,1 % contre
+  60,4 % pour la base, avec seulement 56 réponses changées sur 834 et aucun
+  changement de style, alors que la perte de validation avait chuté de 1,14 à
+  0,23. Contradiction examinée avant toute conclusion.
+- Preuve : en génération directe (`mlx_lm.load(..., adapter_path=...)`), le
+  modèle adapté reproduit exactement les cibles d'entraînement (3/3 à
+  l'identique, espacement Spider compris) ; le serveur lancé avec
+  `--adapter-path` renvoie la sortie du modèle de base, que la requête nomme le
+  modèle par son id ou par "default_model".
+- Cause (lue dans `mlx_lm/server.py` 0.31.3, `ModelProvider.load`) : le nom
+  "default_model" est d'abord remplacé par le chemin du modèle, puis
+  l'adaptateur est cherché dans `_adapter_map` avec ce chemin remplacé, clé qui
+  n'existe pas. L'adaptateur de la ligne de commande n'est donc jamais chargé,
+  sans erreur ni avertissement.
+- Décisions :
+  1. Le fichier est renommé `results/spider/base-rerun.dev.jsonl` : c'est un
+     SECOND passage du modèle de base, pas un résultat du fine-tune. Il est
+     gardé parce qu'il mesure le non-déterminisme du service (même modèle, même
+     prompt, décodage glouton).
+  2. On sert désormais l'adaptateur FUSIONNÉ dans les poids (`mlx_lm.fuse`,
+     bf16), ce qui annule la partie "servi sans fusion" de D14. Plus aucune
+     dépendance au chargement d'adaptateur du serveur.
+  3. Garde-fou : avant chaque évaluation, `npm run spider -- check-served`
+     compare les réponses du serveur aux cibles d'entraînement sur des exemples
+     d'entraînement fixes. Un modèle fine-tuné doit en reproduire la majorité à
+     l'identique, le modèle de base presque aucune. Un run dont le contrôle ne
+     correspond pas au modèle annoncé n'est pas lancé.
+- Leçon écrite pour le rapport : sans ce contrôle, le projet aurait publié
+  "le fine-tune ne change rien", un résultat faux et présentable.

@@ -5,6 +5,7 @@ import { goldCheck, type GoldCheck } from "./goldCheck.js";
 import { prepare, validIds } from "./prepare.js";
 import { comparePaired, readResults, renderPaired, renderSummary, summarize } from "./report.js";
 import { runSpider } from "./run.js";
+import { checkServed, CHECK_THRESHOLDS } from "./checkServed.js";
 
 /**
  * Spider commands:
@@ -12,6 +13,7 @@ import { runSpider } from "./run.js";
  *   prepare                                     write finetune/data/{train,valid}.jsonl
  *   run --split test --label base [--model M] [--base-url U] [--limit N] [--exclude-valid] [--only-valid]
  *   report --split test --before base --after lora   print the before/after markdown
+ *   check-served --expect base|finetuned        prove which model the server really serves (D19)
  */
 
 const { positionals, values } = parseArgs({
@@ -19,7 +21,10 @@ const { positionals, values } = parseArgs({
   options: {
     split: { type: "string", default: "test" },
     label: { type: "string" },
-    model: { type: "string", default: "Qwen/Qwen2.5-Coder-1.5B-Instruct" },
+    // "default_model" makes mlx_lm.server serve the model given on ITS command
+    // line. Naming a model here can make it load that model instead (D19).
+    model: { type: "string", default: "default_model" },
+    expect: { type: "string" },
     "base-url": { type: "string", default: "http://127.0.0.1:8080/v1" },
     limit: { type: "string" },
     before: { type: "string" },
@@ -76,6 +81,16 @@ async function main(): Promise<void> {
       ...(values.limit !== undefined ? { limit: Number(values.limit) } : {}),
       ...(ids !== undefined ? { ids } : {}),
     });
+    return;
+  }
+  if (cmd === "check-served") {
+    const expect = values.expect;
+    if (expect !== "base" && expect !== "finetuned") throw new Error("check-served needs --expect base|finetuned");
+    const r = await checkServed(values["base-url"] as string, values.model as string);
+    const t = CHECK_THRESHOLDS;
+    const ok = expect === "finetuned" ? r.rate >= t.finetunedMin : r.rate <= t.baseMax;
+    process.stdout.write(`served model reproduces ${r.hits}/${r.n} training targets exactly (${(r.rate * 100).toFixed(0)} %); expected ${expect} (${expect === "finetuned" ? `>= ${t.finetunedMin * 100} %` : `<= ${t.baseMax * 100} %`}): ${ok ? "OK" : "MISMATCH"}\n`);
+    if (!ok) process.exit(1);
     return;
   }
   if (cmd === "report") {

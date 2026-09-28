@@ -39,4 +39,7 @@ X=src/spider/prepare.ts; T=test/spiderPrep.test.ts
 run $X 's#\.replace\(/;\\s\*\$/, ""\)##' $T "trailing semicolon kept in target"
 run $X 's#\.\.\.buildMessages\(schema, item\.question\)#{ role: "user" as const, content: item.question }#' $T "training prompt differs from eval prompt"
 
+X=src/spider/checkServed.ts; T=test/spiderReport.test.ts
+run $X 's#if \(extractSql\(reply\) === targets\[i\]\)#if (extractSql(reply)?.toLowerCase() === targets[i]?.toLowerCase())#' $T "check-served ignores case"
+
 exit $fail
