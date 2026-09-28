@@ -35,12 +35,22 @@ harnais, rapport avant/après honnête.
 
 ## En cours
 
-- Baseline du modèle de base sur le dev de sélection (834 questions), en
-  cours sur `mlx_lm.server` port 8080. Sortie : `results/spider/base.dev.jsonl`
-  (reprenable : relancer la même commande reprend là où ça s'est arrêté).
-- Ensuite : entraînement config A (`finetune/lora-a.yaml`), puis évaluation de
-  l'adaptateur sur le même dev de sélection.
-- gpt-4o-mini : PAS lancé tant que Thomas n'a pas dit oui explicitement.
+- Entraînement config A lancé le 2026-09-28 (`finetune/train.sh lora-a.yaml
+  adapters/lora-a`), journal `finetune/logs/lora-a.log`. Environ 0,32 it/s,
+  environ 2 h pour 2148 itérations. Pic mémoire vu : 31 Go.
+- Ensuite : servir l'adaptateur, l'évaluer sur le dev de sélection, comparer à
+  la baseline (`report --before base --after lora-a`).
+- gpt-4o-mini sur test : run complet lancé le 2026-09-28 (clé extraite du
+  fichier indiqué par Thomas vers `.env`, gitignoré, jamais affichée). Reprenable :
+  `npm run spider -- run --split test --label gpt-4o-mini --model gpt-4o-mini --base-url https://api.openai.com/v1`
+- Réserve : ce run tourne en même temps que l'entraînement A (CPU partagé pour
+  SQLite). Le temps d'entraînement de A est donc un majorant léger.
+
+## Résultats déjà mesurés
+
+- Baseline dev de sélection (834) : 60,4 % (504/834), IC 95 % [57,1 ; 63,7].
+  Officiel : 63,7 % par défaut, 62,9 % avec --keep_distinct (écarts expliqués
+  en D16). 99,1 % des erreurs ont une probabilité par token >= 0,75.
 
 ## Bloque
 
