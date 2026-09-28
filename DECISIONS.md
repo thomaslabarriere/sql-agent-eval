@@ -257,3 +257,26 @@ ferait changer d'avis. Statut : PROPOSÉE (en attente de Thomas) ou ACTÉE.
   --keep_distinct : 0 item où l'officiel est plus strict, 21 où il est plus
   tolérant, tous de type `values` (colonnes permutées). Notre comparateur n'est
   donc pas en cause. Le rapport publie les trois chiffres.
+
+## D18. Variante retenue : arrêt anticipé (checkpoint 1000), pas un lr plus fort
+- Date : 2026-09-28. Statut : ACTÉE, avant toute évaluation de l'adaptateur.
+- Mesures de l'entraînement A (journal `finetune/logs/lora-a.log`) : perte de
+  validation 1,143 (itération 1), 0,232 (200), 0,224 (1000), minimum 0,222
+  (1200), puis 0,244 en fin d'époque (2148). Perte d'entraînement finale 0,095.
+  Durée 7305 s (2 h 02, CPU partagé avec le run gpt-4o-mini pendant une partie,
+  voir ETAT). Pic mémoire MLX 36,2 Go ; empreinte mémoire pic du processus
+  38,7 Go (`/usr/bin/time -l`).
+- Lecture : plateau dès 200 itérations, légère remontée ensuite, donc pas de
+  sous-apprentissage. La règle écrite en D11 AVANT l'entraînement dit : lr plus
+  fort seulement si la perte descend encore ; arrêt plus tôt si elle remonte.
+- Décision : deux candidats, tous deux évalués sur le dev de sélection (834) :
+  `lora-a` (fin d'époque) et `lora-a-1000` (checkpoint sauvegardé à 1000,
+  perte de validation 0,224, le plus proche du minimum parmi les checkpoints
+  sauvegardés tous les 500). Le meilleur en justesse d'exécution sur le dev de
+  sélection est le modèle final. En cas d'égalité à 1 point près, on garde le
+  checkpoint 1000 (moins entraîné, perte de validation plus basse).
+- Réserve : une perte de validation sur 200 items est bruitée ; les écarts de
+  0,01 à 0,02 entre checkpoints ne sont pas à surinterpréter. C'est pourquoi le
+  choix se fait sur la justesse d'exécution, pas sur la perte.
+- Écartée : réentraîner avec lr 5e-5 (la courbe ne montre pas de
+  sous-apprentissage).
