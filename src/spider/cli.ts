@@ -26,6 +26,10 @@ const { positionals, values } = parseArgs({
     after: { type: "string" },
     "exclude-valid": { type: "boolean", default: false },
     "only-valid": { type: "boolean", default: false },
+    /** Report only: "label=usdPerMIn/usdPerMOut" for API-served runs, e.g. gpt-4o-mini=0.15/0.6. */
+    price: { type: "string", multiple: true },
+    /** Report only: more runs to summarize (not paired), e.g. an API reference. */
+    extra: { type: "string", multiple: true },
   },
 });
 
@@ -78,9 +82,17 @@ async function main(): Promise<void> {
     const gold = readGold();
     const empty = gold ? new Set(gold.emptyIds) : undefined;
     const out: string[] = [];
-    for (const label of [values.before, values.after]) {
+    const prices = new Map(
+      (values.price ?? []).map((p) => {
+        const [label, rest] = p.split("=");
+        const [pin, pout] = (rest ?? "").split("/").map(Number);
+        return [label, { in: pin as number, out: pout as number }] as const;
+      }),
+    );
+    const labels = [values.before, values.after, ...(values.extra ?? [])];
+    for (const label of labels) {
       if (!label) continue;
-      out.push(renderSummary(`${label} (${split})`, summarize(readResults(resultPath(label)), empty)), "");
+      out.push(renderSummary(`${label} (${split})`, summarize(readResults(resultPath(label)), empty), prices.get(label)), "");
     }
     if (values.before && values.after) {
       out.push(renderPaired(comparePaired(readResults(resultPath(values.before)), readResults(resultPath(values.after)))));

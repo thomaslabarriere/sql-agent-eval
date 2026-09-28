@@ -140,7 +140,13 @@ function num(x: number | null, digits = 2): string {
   return x === null ? "non mesuré" : x.toFixed(digits);
 }
 
-export function renderSummary(label: string, s: RunSummary): string {
+/** API cost from measured token counts and a price per million tokens; null when unmeasured. */
+export function apiCostUsd(s: RunSummary, usdPerMIn: number, usdPerMOut: number): number | null {
+  if (s.tokens.prompt === null || s.tokens.completion === null) return null;
+  return (s.tokens.prompt * usdPerMIn + s.tokens.completion * usdPerMOut) / 1e6;
+}
+
+export function renderSummary(label: string, s: RunSummary, price?: { in: number; out: number }): string {
   const lines = [
     `### ${label}`,
     "",
@@ -157,6 +163,7 @@ export function renderSummary(label: string, s: RunSummary): string {
     `| temps total de génération | ${s.latency.totalS.toFixed(0)} s |`,
     `| tokens prompt / complétion | ${s.tokens.prompt ?? "non mesuré"} / ${s.tokens.completion ?? "non mesuré"} |`,
     `| débit de complétion (tokens/s, latence incluse) | ${num(s.tokens.completionPerS, 1)} |`,
+    `| coût API | ${price === undefined ? "0 $ (modèle local ; électricité non mesurée)" : `${num(apiCostUsd(s, price.in, price.out), 4)} $ (${price.in} $ / ${price.out} $ par million de tokens entrée / sortie)`} |`,
     `| probabilité moyenne par token, juste / faux | ${num(s.tokenProb.meanCorrect)} / ${num(s.tokenProb.meanWrong)} |`,
     `| part des erreurs à probabilité >= 0,75 | ${s.tokenProb.wrongAbove075 === null ? "non mesuré" : pct(s.tokenProb.wrongAbove075)} |`,
   ];

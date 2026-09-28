@@ -68,7 +68,12 @@ function tokenProb(logprobs: { logprob: number }[] | null | undefined): number |
 
 export async function runSpider(opts: RunOptions): Promise<void> {
   mkdirSync(dirname(opts.out), { recursive: true });
-  const client = new OpenAI({ baseURL: opts.baseUrl, apiKey: "local" });
+  // A local server needs no key. A remote API key is read from the environment
+  // (loaded from the gitignored .env), never from the command line.
+  const local = /^https?:\/\/(127\.0\.0\.1|localhost)[:/]/.test(opts.baseUrl);
+  const apiKey = local ? "local" : process.env["OPENAI_API_KEY"];
+  if (!apiKey) throw new Error(`no OPENAI_API_KEY in the environment for ${opts.baseUrl}`);
+  const client = new OpenAI({ baseURL: opts.baseUrl, apiKey });
   let items: SpiderItem[] = loadSplit(opts.split);
   if (opts.ids) items = items.filter((i) => opts.ids?.has(i.id));
   if (opts.limit !== undefined) items = items.slice(0, opts.limit);

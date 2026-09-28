@@ -33,6 +33,7 @@ X=src/spider/report.ts; T=test/spiderReport.test.ts
 run $X 's#const scored = results\.filter\(\(r\) => r\.goldError === undefined\);#const scored = [...results];#' $T "gold failures scored instead of excluded"
 run $X 's#else if \(x && !y\) regressions\.push#else if (x \&\& !y) fixes.push#' $T "regressions counted as fixes"
 run $X 's#if \(xs\.some\(\(x\) => x === null\)\) return null;##' $T "partial token count summed"
+run $X 's#s\.tokens\.prompt \* usdPerMIn#s.tokens.prompt * usdPerMOut#' $T "input tokens priced at output rate"
 
 X=src/spider/prepare.ts; T=test/spiderPrep.test.ts
 run $X 's#\.replace\(/;\\s\*\$/, ""\)##' $T "trailing semicolon kept in target"

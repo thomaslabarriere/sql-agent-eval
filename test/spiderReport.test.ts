@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { comparePaired, summarize } from "../src/spider/report.js";
+import { apiCostUsd, comparePaired, summarize } from "../src/spider/report.js";
 import type { ItemResult } from "../src/spider/run.js";
 import type { Category } from "../src/types.js";
 
@@ -71,5 +71,13 @@ describe("comparePaired", () => {
     expect(c.n).toBe(1);
     expect(c.unpaired).toBe(2);
     expect(c.regressions).toEqual([]);
+  });
+});
+
+describe("apiCostUsd", () => {
+  it("prices measured tokens, and refuses to price unmeasured ones", () => {
+    const s = summarize([r("a", "correct", { promptTokens: 1_000_000, completionTokens: 500_000 })]);
+    expect(apiCostUsd(s, 0.15, 0.6)).toBeCloseTo(0.45, 10);
+    expect(apiCostUsd(summarize([r("a", "correct", { promptTokens: null })]), 0.15, 0.6)).toBeNull();
   });
 });

@@ -233,3 +233,19 @@ ferait changer d'avis. Statut : PROPOSÉE (en attente de Thomas) ou ACTÉE.
   les deux divergent. Aucun des deux ne sert à choisir celui qui arrange.
 - Changerait d'avis si : l'officiel devenait plus strict que nous sur des items
   (ce serait un défaut de notre comparateur, à corriger avec un test).
+
+## D17. Référence API : gpt-4o-mini, même protocole, sur test
+- Date : 2026-09-28. Statut : ACTÉE (feu vert de Thomas le 2026-09-28).
+- Décision : gpt-4o-mini (snapshot par défaut gpt-4o-mini-2024-07-18) évalué
+  avec EXACTEMENT le même prompt, la même extraction, le même exécuteur et le
+  même comparateur, sur le test uniquement. Il sert d'échelle, pas de cible : on
+  ne règle rien sur lui.
+- Prix vérifié le 2026-09-28 sur developers.openai.com : 0,15 $ par million de
+  tokens en entrée, 0,60 $ en sortie. Coût estimé avant lancement : environ
+  0,12 $ pour le test (estimation sur le tokenizer Qwen, marge ±30 %). Le coût
+  publié est recalculé sur les tokens facturés renvoyés par l'API.
+- Réserves écrites dans le rapport : gpt-4o-mini a très probablement vu Spider
+  (publié en 2018) ; temperature 0 n'est pas strictement déterministe côté API ;
+  sa latence inclut le réseau et n'est pas comparable à celle d'un modèle local.
+- Clé : lue dans `.env` (gitignoré) via `--env-file-if-exists`, jamais en
+  argument de ligne de commande.

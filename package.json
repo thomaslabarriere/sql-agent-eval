@@ -13,7 +13,7 @@
     "test:cov": "vitest run --coverage",
     "report": "tsx src/cli.ts report",
     "live": "tsx src/cli.ts live",
-    "spider": "node --no-warnings --import tsx src/spider/cli.ts"
+    "spider": "node --no-warnings --env-file-if-exists=.env --import tsx src/spider/cli.ts"
   },
   "keywords": [
     "text-to-sql",
