@@ -1,4 +1,4 @@
-import type { Db } from "./db.js";
+import type { SqlExecutor } from "./exec.js";
 import { SqlRunError } from "./db.js";
 import type { CanonicalValue, DiffKind, Question, ResultSet, SqlAttempt, Verdict } from "./types.js";
 
@@ -112,7 +112,7 @@ function multisetEqual(gold: ResultSet, agent: ResultSet): boolean {
  * Classify one agent attempt against a question. The verdict is fully
  * determined by execution and comparison; no LLM is involved.
  */
-export async function verify(db: Db, question: Question, attempt: SqlAttempt): Promise<Verdict> {
+export async function verify(db: SqlExecutor, question: Question, attempt: SqlAttempt): Promise<Verdict> {
   const base = { questionId: question.id, confidence: attempt.confidence };
 
   if (attempt.abstained || attempt.sql === null) {

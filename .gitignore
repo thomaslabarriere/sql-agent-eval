@@ -5,3 +5,10 @@ coverage/
 .env.local
 *.log
 .DS_Store
+
+# Spider data, training data, model weights (see DECISIONS.md D10)
+data/
+finetune/.venv/
+finetune/adapters/
+finetune/fused/
+finetune/data/
