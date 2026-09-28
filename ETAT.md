@@ -56,6 +56,15 @@ npm run spider -- run --split dev --exclude-valid --label lora-a
 
 ## Résultats déjà mesurés
 
+- fused/lora-a sur dev de sélection : 67,5 % (563/834), IC [64,3 ; 70,6] contre
+  base 60,4 %. Appariés : 111 corrections, 52 régressions, +7,1 points, McNemar
+  p = 4,4e-6. Colonnes/tables inventées 148 -> 72 ; wrong_result 181 -> 197.
+  Officiel --keep_distinct : 62,9 % -> 69,9 % (107 corrections, 49 régressions).
+- Hypothèse testée et RÉFUTÉE : "les régressions viennent de l'ordre des
+  colonnes appris du style Spider". Seules 4/52 sont acceptées par l'officiel ;
+  les 48 autres sont de vraies erreurs (17 schéma, 18 valeurs, 9 vide, 6 nombre
+  de lignes, 2 erreurs SQL).
+
 - Non-déterminisme du service (base servie deux fois, même prompt, glouton) :
   56/834 réponses différentes (6,7 %) ; 504 puis 501 justes ; 13 items
   changent de verdict. C'est le bruit de fond de toute comparaison.
