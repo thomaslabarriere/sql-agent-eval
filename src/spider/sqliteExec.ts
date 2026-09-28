@@ -22,7 +22,10 @@ export const DEFAULT_MAX_ROWS = 200_000;
 const WORKER_SRC = `
 const { parentPort, workerData } = require("node:worker_threads");
 const { DatabaseSync } = require("node:sqlite");
-const db = new DatabaseSync(workerData.path, { readOnly: true });
+// Spider writes string literals in double quotes (WHERE name = "Mars"). Python's
+// sqlite3, used by the official evaluator, accepts them; node:sqlite rejects them
+// unless asked. Enabled so gold and predictions run as they do upstream (D15).
+const db = new DatabaseSync(workerData.path, { readOnly: true, enableDoubleQuotedStringLiterals: true });
 parentPort.on("message", ({ id, sql }) => {
   try {
     const stmt = db.prepare(sql);

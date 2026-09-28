@@ -100,11 +100,21 @@ ferait changer d'avis. Statut : PROPOSÉE (en attente de Thomas) ou ACTÉE.
   proprement.
 
 ## D9. Confiance
-- Date : 2026-09-28. Statut : ACTÉE (validée par Thomas le 2026-09-28).
-- Décision : pas de confiance auto-déclarée pour le modèle local. Logprob moyen
-  des tokens si `mlx_lm.server` le fournit (à vérifier), sinon "non mesuré" et
-  le quadrant confiance x justesse n'est pas publié pour ce run.
-- Changerait d'avis si : rien, tant qu'aucun signal mesuré n'existe.
+- Date : 2026-09-28. Statut : ACTÉE (mise à jour après vérification).
+- Vérifié le 2026-09-28 : `mlx_lm.server` 0.31.3 renvoie `logprobs` par token
+  via le client `openai` (paramètres `logprobs: true, top_logprobs: 1`), ainsi
+  que `usage` (tokens prompt et complétion).
+- Décision : confiance = exp(moyenne des logprobs des tokens générés). C'est une
+  probabilité du modèle sur sa propre sortie, PAS une confiance calibrée. Le
+  rapport l'appelle "probabilité moyenne par token" et publie confiance moyenne
+  juste/faux et la part d'erreurs au-dessus de 0,75, avec cette réserve.
+- Écartée : confiance auto-déclarée en JSON (sans valeur sur un 1,5B, et
+  imposerait un format de sortie différent de l'entraînement).
+- Observé : les logprobs renvoyés semblent grossièrement quantifiés (valeurs
+  comme 0 et -0,125 sur le premier essai). Non investigué ; si cela rend le
+  signal inutilisable, on l'écrit.
+- Changerait d'avis si : le signal ne sépare pas du tout juste et faux (on le
+  publiera comme tel, c'est un résultat).
 
 ## D10. Données et poids hors git
 - Date : 2026-09-28. Statut : ACTÉE (validée par Thomas le 2026-09-28).
@@ -145,3 +155,37 @@ ferait changer d'avis. Statut : PROPOSÉE (en attente de Thomas) ou ACTÉE.
   justesse sur le sous-ensemble à gold non vide, car une requête fausse qui
   renvoie vide y est comptée juste par construction.
 - Écartée : les retirer silencieusement.
+
+## D14. Modèle servi en bf16, révision figée, adaptateur servi sans fusion
+- Date : 2026-09-28. Statut : ACTÉE.
+- Décision : Qwen/Qwen2.5-Coder-1.5B-Instruct, révision Hugging Face
+  `2e1fd397ee46e1388853d2af2c993145b0f1098a` (licence apache-2.0 relue dans les
+  métadonnées), poids bf16 (3,1 Go), servis par `mlx_lm.server` 0.31.3
+  (mlx 0.32.2). Le fine-tuné est servi avec `--adapter-path`, même serveur,
+  même poids de base.
+- Écartées : versions quantifiées 4 bits (mélangerait l'effet de la
+  quantification et celui du fine-tune) ; fusion des poids (une étape de plus,
+  inutile puisque le serveur charge l'adaptateur).
+- Décodage : glouton (temperature 0), max_tokens 512, requêtes séquentielles
+  (pas de concurrence) pour une latence propre. Une réponse tronquée
+  (finish_reason = length) est comptée et publiée.
+- Changerait d'avis si : la latence de l'adaptateur non fusionné diffère
+  sensiblement ; on mesurerait alors aussi le modèle fusionné.
+
+## D15. Littéraux entre guillemets doubles acceptés (comme l'évaluateur officiel)
+- Date : 2026-09-28. Statut : ACTÉE.
+- Incident : le premier contrôle d'intégrité avec l'exécuteur du harnais a
+  trouvé 406 gold en erreur sur 2147 (test) et 213 sur 1034 (dev), contre 0 avec
+  le sqlite3 de Python. Cause : Spider écrit des chaînes entre guillemets
+  doubles (`WHERE name = "Mars"`). Le SQLite embarqué dans Node (3.51.3) les
+  refuse par défaut ; le sqlite3 de Python (3.51.0) les accepte.
+- Décision : `enableDoubleQuotedStringLiterals: true` dans l'exécuteur. Après
+  correction : 0 erreur de gold, 54 gold vides sur test, 49 sur dev, identique
+  au contrôle Python pour le test. Un test l'exige et a été vu rouge sans
+  l'option.
+- Raison : l'évaluateur officiel Spider tourne sur le sqlite3 de Python. Sans
+  l'option, un cinquième du gold aurait été non notable, et une prédiction
+  écrite dans le style de Spider aurait été comptée fausse.
+- Effet de bord assumé : un identifiant mal écrit entre guillemets doubles peut
+  être lu comme une chaîne au lieu de lever "no such column". Même règle avant
+  et après, et c'est le comportement de l'évaluateur officiel.

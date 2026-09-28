@@ -34,6 +34,11 @@ describe("SqliteExecutor", () => {
     expect(r.rows).toEqual([["x", "y"]]);
   });
 
+  it("accepts double-quoted string literals, as Spider gold SQL uses them", async () => {
+    const r = await exec.query('SELECT count(*) FROM a WHERE name = "x"');
+    expect(r.rows).toEqual([[1]]);
+  });
+
   it("is read-only", async () => {
     await expect(exec.query("DELETE FROM a")).rejects.toBeInstanceOf(SqlRunError);
     const r = await exec.query("SELECT count(*) FROM a");

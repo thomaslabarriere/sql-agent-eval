@@ -72,6 +72,8 @@ export interface Verdict {
   /** Present when category is wrong_result: what kind of difference was found. */
   diffKind?: DiffKind;
   rationale: string;
+  /** The execution error, when the agent's SQL failed to run. */
+  error?: string;
 }
 
 export interface LabeledQuestion {

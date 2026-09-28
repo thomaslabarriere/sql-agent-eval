@@ -6,6 +6,7 @@ import { DatabaseSync } from "../src/spider/nodeSqlite.js";
 import { findLeaks, cleanTrain } from "../src/spider/leak.js";
 import { buildMessages, extractSql, serializeSchema, SYSTEM_PROMPT } from "../src/spider/prompt.js";
 import { isOrdered, loadSplit, SPIDER_ROOT, type SpiderItem } from "../src/spider/data.js";
+import { seededShuffle, targetSql, toExample } from "../src/spider/prepare.js";
 
 function item(id: string, split: SpiderItem["split"], dbId: string, question: string, goldSql: string): SpiderItem {
   return { id, split, dbId, question, goldSql };
@@ -120,5 +121,25 @@ describe.skipIf(!existsSync(join(SPIDER_ROOT, "test.json")))("real Spider data",
     expect(clean.sharedDbs).toEqual([]);
     expect(clean.trainIdsToDrop).toEqual([]);
     expect(clean.evalItemsTouched).toBe(0);
+  });
+});
+
+describe("training data", () => {
+  it("uses exactly the evaluation prompt, plus the gold SQL as the answer", () => {
+    const it0 = item("t0", "train", "club_1", "How many clubs are there?", "SELECT count(*) FROM club ;");
+    const ex = toExample(it0, "CREATE TABLE club (id INT);");
+    expect(ex.messages.slice(0, 2)).toEqual(buildMessages("CREATE TABLE club (id INT);", "How many clubs are there?"));
+    expect(ex.messages[2]).toEqual({ role: "assistant", content: "SELECT count(*) FROM club" });
+  });
+
+  it("strips only the trailing semicolon from the target", () => {
+    expect(targetSql("  SELECT 'a;b' FROM t;  ")).toBe("SELECT 'a;b' FROM t");
+  });
+
+  it("shuffles deterministically and without loss", () => {
+    const xs = Array.from({ length: 50 }, (_, i) => i);
+    expect(seededShuffle(xs, 7)).toEqual(seededShuffle(xs, 7));
+    expect(seededShuffle(xs, 7)).not.toEqual(xs);
+    expect([...seededShuffle(xs, 7)].sort((a, b) => a - b)).toEqual(xs);
   });
 });

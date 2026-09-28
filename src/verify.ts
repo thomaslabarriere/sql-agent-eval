@@ -130,10 +130,11 @@ export async function verify(db: SqlExecutor, question: Question, attempt: SqlAt
   try {
     agentResult = normalize(await db.query(attempt.sql));
   } catch (err) {
+    const error = err instanceof Error ? err.message : String(err);
     if (err instanceof SqlRunError && err.kind === "schema") {
-      return { ...base, category: "schema_hallucination", matched: false, rationale: "referenced a table or column that does not exist" };
+      return { ...base, category: "schema_hallucination", matched: false, rationale: "referenced a table or column that does not exist", error };
     }
-    return { ...base, category: "sql_error", matched: false, rationale: "the SQL failed to execute" };
+    return { ...base, category: "sql_error", matched: false, rationale: "the SQL failed to execute", error };
   }
 
   const gold = normalize(await db.query(question.goldSql));
