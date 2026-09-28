@@ -312,3 +312,19 @@ ferait changer d'avis. Statut : PROPOSÉE (en attente de Thomas) ou ACTÉE.
      correspond pas au modèle annoncé n'est pas lancé.
 - Leçon écrite pour le rapport : sans ce contrôle, le projet aurait publié
   "le fine-tune ne change rien", un résultat faux et présentable.
+
+## D20. Modèle final : checkpoint 1000 de la config A (fusionné)
+- Date : 2026-09-29. Statut : ACTÉE, AVANT tout passage sur le test.
+- Mesures sur le dev de sélection (834) : base 60,4 % ; lora-a (fin d'époque)
+  67,5 % ; lora-a-1000 68,8 % (IC [65,6 ; 71,9]). lora-a-1000 contre lora-a :
+  +1,3 point, 54 corrections, 43 régressions, McNemar p = 0,31, donc NON
+  significatif.
+- Décision : application de la règle D18 écrite avant ces mesures. lora-a-1000
+  est meilleur, et l'écart est proche de la zone d'égalité où la règle le
+  désignait de toute façon. Modèle final : `finetune/fused/lora-a-1000`.
+- Ce qu'on NE dit PAS : que l'arrêt anticipé "améliore" le modèle. L'écart entre
+  les deux checkpoints est dans le bruit (le non-déterminisme du serveur seul
+  fait changer 13 verdicts sur 834).
+- Test : un seul passage pour la base et un seul pour lora-a-1000, lancés par
+  `scripts/run-final-test.sh`, sans autre charge sur la machine (latences
+  publiées). lora-a (fin d'époque) n'est PAS évalué sur le test.
