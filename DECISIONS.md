@@ -249,3 +249,11 @@ ferait changer d'avis. Statut : PROPOSÉE (en attente de Thomas) ou ACTÉE.
   sa latence inclut le réseau et n'est pas comparable à celle d'un modèle local.
 - Clé : lue dans `.env` (gitignoré) via `--env-file-if-exists`, jamais en
   argument de ligne de commande.
+- Mise à jour 2026-09-28, baseline dev complète (834 items) : nous 504
+  (60,4 %), officiel par défaut 531 (63,7 %), officiel --keep_distinct 525
+  (62,9 %). L'officiel par défaut était PLUS STRICT que nous sur 4 items.
+  Examinés un par un : résultats identiques au gold, mais l'officiel retire le
+  DISTINCT de la prédiction, ce qui fait apparaître des doublons. Avec
+  --keep_distinct : 0 item où l'officiel est plus strict, 21 où il est plus
+  tolérant, tous de type `values` (colonnes permutées). Notre comparateur n'est
+  donc pas en cause. Le rapport publie les trois chiffres.
