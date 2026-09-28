@@ -1,0 +1,20 @@
+# Configuration A (DECISIONS.md D11). mlx-lm defaults for the LoRA itself, set
+# explicitly so a change of library default cannot move the run silently.
+fine_tune_type: lora
+optimizer: adam
+num_layers: 16            # LoRA on the last 16 of 28 transformer blocks
+lora_parameters:
+  rank: 8
+  scale: 20.0
+  dropout: 0.0
+learning_rate: 1.0e-5
+batch_size: 4
+iters: 2148               # one epoch: ceil(8590 / 4)
+max_seq_length: 2048      # longest training example is 1929 tokens: nothing truncated
+mask_prompt: true         # loss on the SQL answer only, not on schema and question
+val_batches: 50           # 50 x 4 = the whole 200-item validation slice of dev
+steps_per_eval: 200
+steps_per_report: 50
+save_every: 500
+seed: 0
+grad_checkpoint: false

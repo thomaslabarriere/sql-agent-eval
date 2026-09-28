@@ -62,6 +62,11 @@ ferait changer d'avis. Statut : PROPOSÉE (en attente de Thomas) ou ACTÉE.
   alors aussi au réglage : fuite indirecte).
 - Raison : séparation stricte. Contrôle de fuite automatisé sur `db_id`,
   questions normalisées et SQL normalisés, résultat publié.
+- Précision (2026-09-28) : dev est coupé en deux, 200 items fixes (graine
+  20260928) pour la perte de validation pendant l'entraînement, et les 834
+  autres ("dev de sélection") pour choisir la config par justesse d'exécution.
+  Même la baseline n'est PAS lancée sur le test avant que le modèle final soit
+  choisi : aucun chiffre du test ne peut influencer un choix.
 - Changerait d'avis si : Thomas préfère un chiffre dev comparable à la
   littérature ; on publierait alors les deux, en le disant.
 
@@ -124,8 +129,26 @@ ferait changer d'avis. Statut : PROPOSÉE (en attente de Thomas) ou ACTÉE.
 - Raison : taille, et CC BY-SA 4.0 est share-alike ; publier des poids dérivés
   est une décision de Thomas.
 
-## D11. Hyperparamètres LoRA
-- Date : 2026-09-28. Statut : À DÉCIDER après la baseline (réglage sur dev).
+## D11. Hyperparamètres LoRA : configuration A d'abord, une variante au plus
+- Date : 2026-09-28. Statut : ACTÉE (config A) ; variante décidée sur dev.
+- Config A (`finetune/lora-a.yaml`) : valeurs par défaut de mlx-lm 0.31.3 pour
+  le LoRA (rang 8, scale 20, dropout 0, 16 derniers blocs sur 28, Adam,
+  lr 1e-5), écrites en clair ; batch 4 ; 1 époque = 2148 itérations ; perte
+  masquée sur le prompt ; max_seq_length 2048 (plus long exemple mesuré : 1929
+  tokens avec le chat template, donc aucune troncature) ; graine 0.
+- Pourquoi les défauts : ce sont des valeurs éprouvées sur ce code, et je n'ai
+  pas de mesure qui justifie d'autres valeurs. Choisir "au feeling" un rang ou
+  un lr, c'est un réglage non traçable.
+- Budget de réglage, dit honnêtement : une passe dev complète (834 questions)
+  prend environ 40 minutes, donc pas de grille. Au plus UNE variante, choisie
+  d'après la courbe de perte de A (lr 5e-5 si la perte de validation descend
+  encore franchement en fin d'époque, sous-apprentissage probable ; arrêt plus
+  tôt si elle remonte). Le choix entre A et la variante se fait sur la justesse
+  d'exécution du dev de sélection, jamais sur le test.
+- Écartés : DoRA et full fine-tune (plus coûteux, pas le sujet) ; QLoRA 4 bits
+  (voir D14).
+- Changerait d'avis si : A dégrade la justesse sur dev ; on documente la
+  dégradation, puis on essaie la variante.
 
 ## D12. Doublons textuels train/eval : retirés de l'entraînement
 - Date : 2026-09-28. Statut : ACTÉE.
@@ -189,3 +212,24 @@ ferait changer d'avis. Statut : PROPOSÉE (en attente de Thomas) ou ACTÉE.
 - Effet de bord assumé : un identifiant mal écrit entre guillemets doubles peut
   être lu comme une chaîne au lieu de lever "no such column". Même règle avant
   et après, et c'est le comportement de l'évaluateur officiel.
+
+## D16. Contre-vérification par l'évaluateur officiel, verdict par item
+- Date : 2026-09-28. Statut : ACTÉE.
+- Outil : taoyds/test-suite-sql-eval, licence Apache 2.0 (fichier LICENSE lu),
+  commit e97acc5, mode `exec` sur les bases Spider standard (pas les bases
+  "test suite" distillées). Dépendances figées : tqdm 4.67.1, sqlparse 0.5.3,
+  nltk 3.9.1 (+ ressource punkt_tab). Lancé par `scripts/official_eval.py`, qui
+  sort aussi un verdict PAR ITEM et la difficulté officielle (easy, medium,
+  hard, extra), avec les fonctions de l'évaluateur lui-même. La moyenne par item
+  est vérifiée égale au total imprimé par l'évaluateur (134/213 = 0,629 sur le
+  premier essai partiel).
+- Constat sur 213 items de la baseline dev : l'officiel n'est jamais plus strict
+  que notre comparateur ; 8 items sont justes pour lui et faux pour nous, tous
+  expliqués par ses deux tolérances documentées : colonnes permutées
+  (`SELECT PetType, AVG(weight)` vs gold `avg(weight), pettype`) et `DISTINCT`
+  retiré des deux côtés (option par défaut, désactivable par --keep_distinct).
+- Décision : notre comparateur reste la métrique principale (D6, inchangée). Le
+  chiffre officiel est publié à côté, avant ET après, avec le nombre d'items où
+  les deux divergent. Aucun des deux ne sert à choisir celui qui arrange.
+- Changerait d'avis si : l'officiel devenait plus strict que nous sur des items
+  (ce serait un défaut de notre comparateur, à corriger avec un test).

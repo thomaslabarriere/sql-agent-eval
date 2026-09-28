@@ -35,13 +35,53 @@ harnais, rapport avant/après honnête.
 
 ## En cours
 
-- Plan validé par Thomas le 2026-09-28 (D1 à D10 ACTÉES). gpt-4o-mini : PAS
-  lancé tant que Thomas n'a pas dit oui explicitement (coût API).
-- Phase 0 faite, phase 1 (exécuteur SQLite dans le harnais) en cours.
+- Baseline du modèle de base sur le dev de sélection (834 questions), en
+  cours sur `mlx_lm.server` port 8080. Sortie : `results/spider/base.dev.jsonl`
+  (reprenable : relancer la même commande reprend là où ça s'est arrêté).
+- Ensuite : entraînement config A (`finetune/lora-a.yaml`), puis évaluation de
+  l'adaptateur sur le même dev de sélection.
+- gpt-4o-mini : PAS lancé tant que Thomas n'a pas dit oui explicitement.
 
 ## Bloque
 
-- Rien de bloquant. Points à valider par Thomas listés en bas.
+- Rien.
+
+## Réserves à ne pas oublier
+
+- Les latences de `base.dev` sont POLLUÉES : l'évaluateur officiel et le
+  tokenizer tournaient en même temps sur la machine. Les latences publiées
+  viendront UNIQUEMENT des passages sur test, lancés sans autre charge.
+
+## Fait depuis la validation du plan (2026-09-28)
+
+- [x] Commits locaux sur `finetune-spider` (non poussés) : exécuteur SQLite,
+      chargeur + contrôle de fuite + prompt unique, runner + rapport.
+- [x] Tests : 70 verts. Preuves d'échec : `scripts/prove-red-all.sh`, 22/22
+      sabotages font passer les tests au rouge.
+- [x] Bug du harnais trouvé et corrigé AVANT toute mesure : guillemets
+      doubles refusés par le SQLite de Node (D15). Gold : 0 erreur, 54 vides
+      (test), 49 vides (dev).
+- [x] Données d'entraînement : 8590 exemples (8659 moins 69 doublons, D12),
+      validation 200 items de dev. Longueur max 1929 tokens.
+- [x] mlx-lm 0.31.3 / mlx 0.32.2 dans `finetune/.venv` (uv). Modèle figé à la
+      révision `2e1fd39...` (D14). Serveur local vérifié compatible `openai`,
+      logprobs disponibles (D9).
+
+## Commandes pour reprendre
+
+```bash
+cd ~/projects/Github/sql-agent-eval
+# serveur, modèle de base
+finetune/.venv/bin/mlx_lm.server --model Qwen/Qwen2.5-Coder-1.5B-Instruct --port 8080
+# baseline dev de sélection (reprenable)
+npm run spider -- run --split dev --exclude-valid --label base
+# entraînement
+finetune/train.sh lora-a.yaml adapters/lora-a
+# serveur avec adaptateur
+finetune/.venv/bin/mlx_lm.server --model Qwen/Qwen2.5-Coder-1.5B-Instruct --adapter-path finetune/adapters/lora-a --port 8080
+npm run spider -- run --split dev --exclude-valid --label lora-a
+npm run spider -- report --split dev --before base --after lora-a
+```
 
 ## Ce que j'ai appris du repo (utile pour la suite)
 
