@@ -328,3 +328,28 @@ ferait changer d'avis. Statut : PROPOSÉE (en attente de Thomas) ou ACTÉE.
 - Test : un seul passage pour la base et un seul pour lora-a-1000, lancés par
   `scripts/run-final-test.sh`, sans autre charge sur la machine (latences
   publiées). lora-a (fin d'époque) n'est PAS évalué sur le test.
+
+## D21. Langue : rapport et README en anglais, journaux en français
+- Date : 2026-09-29. Statut : ACTÉE.
+- Décision : le README, `docs/FINETUNE-REPORT.md` et les tableaux générés par
+  `npm run spider -- report` sont en anglais, comme le reste du repo (README et
+  docs existants). DECISIONS.md et ETAT.md restent en français : ce sont les
+  documents de travail de Thomas.
+- Changerait d'avis si : Thomas veut une version française du rapport pour une
+  candidature précise (à produire depuis les mêmes fichiers de résultats).
+
+## D22. Correction de D10 : les résultats committés contiennent du texte Spider
+- Date : 2026-09-29. Statut : ACTÉE.
+- Constat : D10 disait que seuls identifiants et verdicts seraient committés.
+  En réalité les fichiers `results/spider/*.jsonl` contiennent aussi la
+  question et le SQL gold de Spider (et `gold-check.*.json` des identifiants).
+  C'est une redistribution de contenu CC BY-SA 4.0.
+- Décision : les garder, car sans eux les régressions publiées ne sont pas
+  vérifiables par un tiers. Ajout de `results/spider/DATA-LICENSE.md` :
+  attribution, citation, et licence CC BY-SA 4.0 pour ces fichiers (distincte
+  de la licence MIT du code).
+- Toujours hors git : bases SQLite, JSONL d'entraînement, adaptateurs, modèles
+  fusionnés.
+- Vérifié ? La licence CC BY-SA 4.0 de Spider oui (page officielle). Que cette
+  notice suffise juridiquement : NON vérifié par un juriste ; c'est la lecture
+  standard de la licence (attribution + même licence).

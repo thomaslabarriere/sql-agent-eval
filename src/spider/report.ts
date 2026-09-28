@@ -133,11 +133,11 @@ export function comparePaired(before: readonly ItemResult[], after: readonly Ite
 }
 
 export function pct(x: number): string {
-  return `${(x * 100).toFixed(1)} %`;
+  return `${(x * 100).toFixed(1)}%`;
 }
 
 function num(x: number | null, digits = 2): string {
-  return x === null ? "non mesuré" : x.toFixed(digits);
+  return x === null ? "not measured" : x.toFixed(digits);
 }
 
 /** API cost from measured token counts and a price per million tokens; null when unmeasured. */
@@ -150,22 +150,22 @@ export function renderSummary(label: string, s: RunSummary, price?: { in: number
   const lines = [
     `### ${label}`,
     "",
-    `| mesure | valeur |`,
+    `| measure | value |`,
     `|---|---|`,
-    `| justesse d'exécution | ${pct(s.accuracy)} (${s.correct}/${s.scored}), IC 95 % Wilson [${pct(s.ci.low)} ; ${pct(s.ci.high)}] |`,
-    `| justesse, gold non vide | ${s.nonEmpty === null ? "non mesuré" : `${pct(s.nonEmpty.accuracy)} (${s.nonEmpty.correct}/${s.nonEmpty.n})`} |`,
-    `| items non notés (gold en erreur) | ${s.goldErrors} |`,
+    `| execution accuracy | ${pct(s.accuracy)} (${s.correct}/${s.scored}), 95% Wilson CI [${pct(s.ci.low)}, ${pct(s.ci.high)}] |`,
+    `| accuracy, non-empty gold only | ${s.nonEmpty === null ? "not measured" : `${pct(s.nonEmpty.accuracy)} (${s.nonEmpty.correct}/${s.nonEmpty.n})`} |`,
+    `| unscored items (gold failed) | ${s.goldErrors} |`,
     ...CATEGORIES.filter((c) => c !== "correct").map((c) => `| ${c} | ${s.byCategory[c]} |`),
-    `| dont SQL non extrait | ${s.extractionFailures} |`,
-    `| dont timeout d'exécution | ${s.timeouts} |`,
-    `| réponses tronquées (max_tokens) | ${s.truncated} |`,
-    `| latence moyenne / p50 / p95 | ${s.latency.meanMs.toFixed(0)} / ${s.latency.p50Ms.toFixed(0)} / ${s.latency.p95Ms.toFixed(0)} ms |`,
-    `| temps total de génération | ${s.latency.totalS.toFixed(0)} s |`,
-    `| tokens prompt / complétion | ${s.tokens.prompt ?? "non mesuré"} / ${s.tokens.completion ?? "non mesuré"} |`,
-    `| débit de complétion (tokens/s, latence incluse) | ${num(s.tokens.completionPerS, 1)} |`,
-    `| coût API | ${price === undefined ? "0 $ (modèle local ; électricité non mesurée)" : `${num(apiCostUsd(s, price.in, price.out), 4)} $ (${price.in} $ / ${price.out} $ par million de tokens entrée / sortie)`} |`,
-    `| probabilité moyenne par token, juste / faux | ${num(s.tokenProb.meanCorrect)} / ${num(s.tokenProb.meanWrong)} |`,
-    `| part des erreurs à probabilité >= 0,75 | ${s.tokenProb.wrongAbove075 === null ? "non mesuré" : pct(s.tokenProb.wrongAbove075)} |`,
+    `| of which no SQL extracted | ${s.extractionFailures} |`,
+    `| of which execution timeout | ${s.timeouts} |`,
+    `| truncated replies (max_tokens) | ${s.truncated} |`,
+    `| latency mean / p50 / p95 | ${s.latency.meanMs.toFixed(0)} / ${s.latency.p50Ms.toFixed(0)} / ${s.latency.p95Ms.toFixed(0)} ms |`,
+    `| total generation time | ${s.latency.totalS.toFixed(0)} s |`,
+    `| prompt / completion tokens | ${s.tokens.prompt ?? "not measured"} / ${s.tokens.completion ?? "not measured"} |`,
+    `| completion throughput (tokens/s, whole request) | ${num(s.tokens.completionPerS, 1)} |`,
+    `| API cost | ${price === undefined ? "$0 (local model; electricity not measured)" : `$${num(apiCostUsd(s, price.in, price.out), 4)} ($${price.in} / $${price.out} per million input / output tokens)`} |`,
+    `| mean token probability, right / wrong | ${num(s.tokenProb.meanCorrect)} / ${num(s.tokenProb.meanWrong)} |`,
+    `| share of wrong answers with token probability >= 0.75 | ${s.tokenProb.wrongAbove075 === null ? "not measured" : pct(s.tokenProb.wrongAbove075)} |`,
   ];
   return lines.join("\n");
 }
@@ -173,23 +173,23 @@ export function renderSummary(label: string, s: RunSummary, price?: { in: number
 export function renderPaired(c: PairedComparison, maxList = Infinity): string {
   const delta = (c.fixes.length - c.regressions.length) / Math.max(1, c.n);
   const lines = [
-    `| comparaison appariée (${c.n} items notés des deux côtés) | valeur |`,
+    `| paired comparison (${c.n} items scored on both sides) | value |`,
     `|---|---|`,
-    `| juste avant et après | ${c.bothCorrect} |`,
-    `| faux avant et après | ${c.bothWrong} |`,
-    `| **régressions** (juste avant, faux après) | ${c.regressions.length} |`,
-    `| corrections (faux avant, juste après) | ${c.fixes.length} |`,
-    `| écart net | ${delta >= 0 ? "+" : ""}${(delta * 100).toFixed(1)} points |`,
-    `| McNemar exact, p bilatéral | ${c.mcnemarP < 0.0001 ? c.mcnemarP.toExponential(2) : c.mcnemarP.toFixed(4)} |`,
-    `| items non appariés | ${c.unpaired} |`,
+    `| right before and after | ${c.bothCorrect} |`,
+    `| wrong before and after | ${c.bothWrong} |`,
+    `| **regressions** (right before, wrong after) | ${c.regressions.length} |`,
+    `| fixes (wrong before, right after) | ${c.fixes.length} |`,
+    `| net change | ${delta >= 0 ? "+" : ""}${(delta * 100).toFixed(1)} points |`,
+    `| exact McNemar, two-sided p | ${c.mcnemarP < 0.0001 ? c.mcnemarP.toExponential(2) : c.mcnemarP.toFixed(4)} |`,
+    `| unpaired items | ${c.unpaired} |`,
   ];
   if (c.regressions.length > 0) {
-    lines.push("", `#### Régressions (${c.regressions.length})`, "", "| id | base | question | SQL après | catégorie après |", "|---|---|---|---|---|");
+    lines.push("", `#### Regressions (${c.regressions.length})`, "", "| id | database | question | SQL after | category after |", "|---|---|---|---|---|");
     for (const r of c.regressions.slice(0, maxList)) {
-      const cell = (s: string | null) => (s ?? "(aucun)").replace(/\|/g, "\\|").replace(/\n/g, " ");
+      const cell = (s: string | null) => (s ?? "(none)").replace(/\|/g, "\\|").replace(/\n/g, " ");
       lines.push(`| ${r.id} | ${r.dbId} | ${cell(r.question)} | \`${cell(r.predSql)}\` | ${r.category}${r.diffKind ? ` (${r.diffKind})` : ""} |`);
     }
-    if (c.regressions.length > maxList) lines.push(`| ... | | ${c.regressions.length - maxList} de plus dans le fichier de résultats | | |`);
+    if (c.regressions.length > maxList) lines.push(`| ... | | ${c.regressions.length - maxList} more in the result file | | |`);
   }
   return lines.join("\n");
 }
